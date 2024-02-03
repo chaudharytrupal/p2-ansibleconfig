@@ -1,0 +1,14 @@
+---
+- name: Check if Kubernetes cluster is initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubeletconfig_exists
+  changed_when: false
+
+- name: Execute join command if cluster is not initialized
+  become: true
+  ansible.builtin.command:
+    cmd: sh /home/ec2-user/join-command.sh
+  when: not kubeletconfig_exists.stat.exists
+  register: join_command_output
+  changed_when: join_command_output.rc == 0

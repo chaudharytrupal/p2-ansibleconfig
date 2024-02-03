@@ -1,0 +1,14 @@
+---
+- name: Copy K8s repo
+  ansible.builtin.template:
+    src: k8srepo.j2
+    dest: /etc/yum.repos.d/kubernetes.repo
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install kubectl using yum
+  ansible.builtin.yum:
+    name: kubectl
+    state: present
+    disable_excludes: kubernetes

@@ -1,0 +1,50 @@
+---
+- name: Create new dir for kubeconfig files
+  ansible.builtin.file:
+    path: /home/ec2-user/.kube
+    state: directory
+    mode: "0755"
+
+- name: Fetch the admin conf file from controlplane
+  ansible.builtin.fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: ~/
+  delegate_to: "{{ groups['di_controlplane'][0] }}"
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/k8s_key
+
+- name: Copy the file to bastion
+  ansible.builtin.copy:
+    src: ~/admin.conf
+    dest: /home/ec2-user/.kube/config
+    mode: "0644"
+  delegate_to: "{{ hostvars[inventory_hostname].ansible_host }}"
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/bastion_host_key
+
+- name: Fetch the join command file from controlplane
+  ansible.builtin.fetch:
+    src: join-command.sh
+    dest: ~/
+  delegate_to: "{{ groups['di_controlplane'][0] }}"
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/k8s_key
+
+- name: Copy the join command file to bastion
+  ansible.builtin.copy:
+    src: ~/join-command.sh
+    dest: /home/ec2-user/.kube/
+    mode: "0644"
+  delegate_to: "{{ hostvars[inventory_hostname].ansible_host }}"
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/bastion_host_key
+
+- name: Copy the join command file to worker node
+  ansible.builtin.copy:
+    src: ~/join-command.sh
+    dest: /home/ec2-user/
+    mode: "0644"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['di_worker'] }}"
+  vars:
+    ansible_ssh_private_key_file: /home/ec2-user/.ssh/k8s_key
